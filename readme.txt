@@ -1,6 +1,3 @@
-ai_final_project
-================
-
 Relevant data files:
 
 battles.csv -- contains most of the information about battles
