@@ -24,6 +24,6 @@ def parse_and_add(filename, key, data):
 
 if __name__ == "__main__":
     battles = parse_battles("data/battles.csv")
-    parse_and_add("")
+    parse_and_add("data/weather.csv", )
     for battle in battles[1]:
         print battle['isqno']
