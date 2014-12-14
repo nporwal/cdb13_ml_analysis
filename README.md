@@ -8,8 +8,6 @@ ai_final_project
 - 1 to 1 correspondence
 * belligerents.csv -- information about the battle capacities of each combatant
 - Many to 1 correspondence
-* battle_dyads.csv -- information about win/loss?
-- 1 to 1 correspondence
 * terrain.csv -- terrain data
 - 1 to 1
 * weather.csv -- weather data

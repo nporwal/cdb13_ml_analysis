@@ -7,6 +7,8 @@ __pycache__/
 # IDE
 .idea/
 
+*.sqlite3
+
 # C extensions
 *.so
 
