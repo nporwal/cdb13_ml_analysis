@@ -29,7 +29,7 @@ def parse_and_add(filename, n):
 
 class BattleData:
     # Provide filenames in order 'battles', 'weather', 'terrain'
-    def __init__(self, filenames):
+    def __init__(self, filenames, keys_file):
         self.n = 0
         self.battles = []
         battles, filenames = filenames[0], filenames[1:]
@@ -46,6 +46,7 @@ class BattleData:
         terrain = parse_and_add(filenames[1], self.n)
         self.__combine(weather)
         self.__combine(terrain)
+        self.__create_dict_and_strip(keys_file)
 
     def __combine(self, data):
         if len(data) != len(self.battles):
@@ -55,7 +56,23 @@ class BattleData:
             for k, v in row.items():
                 b[k] = v
 
+    def __create_dict_and_strip(self, keys_file):
+        with open(keys_file) as keys:
+            self.kvs = {}
+            for line in keys.readlines():
+                key = line.strip()
+                self.kvs[key] = []
+        keys = self.kvs.keys()
+        for battle in self.battles:
+            for k, v in battle.items():
+                if k in keys:
+                    vals = self.kvs[k]
+                    if not v in vals:
+                        self.kvs[k].append(v)
+                else:
+                    del battle[k]
+        for enum in self.kvs.values():
+            enum.sort()
 
 if __name__ == "__main__":
-    battles = BattleData(["data/battles.csv", "data/weather.csv", "data/terrain.csv"])
-    print battles.battles[0]
+    battles = BattleData(["data/battles.csv", "data/weather.csv", "data/terrain.csv"], "data/keys.txt")
