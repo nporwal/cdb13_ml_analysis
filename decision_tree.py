@@ -1,11 +1,17 @@
 import math
+import copy
+from collections import defaultdict
 
 class Node(object):
+    prev_value = None
+    attribute = None
     label = None
     depth = 0
     children = []
 
-    def __init__(self, label, depth, children):
+    def __init__(self, prev_value, attribute, label, depth, children):
+        self.prev_value = prev_value
+        self.attribute = attribute
         self.label = label
         self.depth = depth
         self.children = children
@@ -14,8 +20,10 @@ class Node(object):
 class Leaf(object):
     label = None
     depth = 0
+    prev_value = None
 
-    def __init__(self, label, depth):
+    def __init__(self, prev_value, label, depth):
+        self.prev_value = prev_value
         self.label = label
         self.depth = depth
 
@@ -35,12 +43,12 @@ def get_data(raw_data):
     formatted = []
     for instance in raw_data:
         label = None
-        data_dict = None
+        data_dict = dict()
         for item, value in instance.iteritems():
             if item == 'wina':
                 label = value
             else:
-                data_dict['item'] = value
+                data_dict[item] = value
         formatted.append(Data(label, data_dict))
     return formatted
 
@@ -75,77 +83,66 @@ def information_gain(total_lst):
     original_entropy = entropy([label for (label, value) in total_lst])
 
     #key is an attribute value, count is attributes of that value
-    counts = dict()
-    labels = dict()
+    counts = defaultdict(int)
+    labels = defaultdict(list)
     for label, value in total_lst:
-        #we could fix this with default_dict, but we won't
-        counts[value] = counts.get(value, 0) + 1
-        labels[value] = labels[value].append(label)
-
-    new_entropy = [counts[item]/original_count * entropy(lst) for (item, lst) in labels]
+        counts[value] += 1
+        labels[value].append(label)
+    new_entropy = sum([float(counts.get(item, 0.0))/original_count * entropy(lst) for (item, lst) in labels.iteritems()])
     return original_entropy - new_entropy
 
 
-#input: [Data] -> best_attribute, remaining_attributes
+#input: [Data], [attributes, values] -> best_attribute, remaining_attributes
 def best_attribute(data_lst, attribute_lst):
     attgain_lst = []
-    for attribute, enums in attribute_lst:
-        reduced_lst = [(item.label, item.data['attribute']) for item in data_lst]
-        attgain_lst.append(attribute, information_gain(reduced_lst))
+    for attribute in attribute_lst:
+        reduced_lst = [(item.label, item.data[attribute]) for item in data_lst]
+        attgain_lst.append((attribute, information_gain(reduced_lst)))
     max_attribute, info_gain = max(attgain_lst, key=lambda (attribute, info_gain): info_gain)
-    attgain_lst.remove(max)
+    attgain_lst.remove((max_attribute, info_gain))
     remaining_attributes = [attribute for (attribute, info_gain) in attgain_lst]
     return max_attribute, remaining_attributes
 
 
 #lst is a lst of Data objects
-def tree(lst, depth, attributes, att_dict, depth_restriction=999999):
-    best, info_gain, remaining = best_attribute(lst, attributes)
+def create_tree(prev_value, lst, depth, attributes, att_dict, depth_restriction=999999):
 
-    if info_gain == 1:
-        pass
+    win_count = len([instance for instance in lst if instance.label == '1'])
+    lose_count = len([instance for instance in lst if instance.label == '-1'])
+    draw_count = len([instance for instance in lst if instance.label == '0'])
+    label = max([('1', win_count), ('-1', lose_count), ('0', draw_count)], key = lambda(label, count): count)[0]
+
+    if win_count == len(lst) or lose_count == len(lst) or draw_count == len(lst):
+        return Leaf(prev_value, label, depth)
+    elif not attributes:
+        return Leaf(prev_value, label, depth)
     else:
+        next_decision_att, remaining = best_attribute(lst, attributes)
         children = []
-        for value in att_dict[best]:
-            sub_lst = [instance for instance in lst if instance.data['best'] == value]
-            children.append(tree())
-        Node(label, depth, children)
-
-def water_tree(t, instances):
-        the_type = type(t)
-        if the_type == Leaf:
-            for instance in instances:
-                instance.predicted_label = t.label
-            t.lst = instances
-            return None
-        t.lst = instances
-        i, j = t.criterion
-        positive_instances = [instance for instance in instances if instance.data[i] <= j]
-        negative_instances = [instance for instance in instances if instance.data[i] > j]
-        water_tree(t.left_child, positive_instances)
-        water_tree(t.right_child, negative_instances)
+        for value in att_dict[next_decision_att]:
+            sub_lst = [instance for instance in lst if instance.data[next_decision_att] == value]
+            if sub_lst:
+                children.append(create_tree(value, sub_lst, depth+1, copy.deepcopy(remaining), att_dict, depth_restriction))
+        return Node(prev_value, next_decision_att, label, depth, children)
 
 
-def get_fruit(t):
+def predict_label(instance, t):
+    print str(instance.data)
     if type(t) == Leaf:
-        return t.lst
-    return get_fruit(t.left_child) + get_fruit(t.right_child)
+        print t.label
+        print instance.label
+        return t.label
+    else:
+        deciding_attribute = t.attribute
+        for child in t.children:
+            if child.prev_value == instance.data[deciding_attribute]:
+                return predict_label(instance, child)
 
+        print 'this is weirdly met %s %s' % (str(child), str(deciding_attribute))
+        return t.label
 
-def count_leaves(t):
-    if type(t) == Leaf:
-        return 1
-    return count_leaves(t.left_child) + count_leaves(t.right_child)
-
-
-def count_nodes(t):
-    if type(t) == Leaf:
-        return 1
-    return 1 + count_nodes(t.left_child) + count_nodes(t.right_child)
-
-
-def edible_proportion(instances):
-    correct = [instance for instance in instances if instance.label == instance.predicted_label]
+def test(t, instances):
+    correct = [instance for instance in instances if instance.label == predict_label(instance, t)]
     return float(len(correct))/len(instances)
 
 
@@ -157,31 +154,16 @@ def string_tree(t):
         return ('Node(list = %s, left_child = %s, right_child = %s)' %
         (string_lst, string_tree(t.left_child), string_tree(t.right_child)))
 
-def depth_calculations():
-    print 'doing calculations of varying max depth'
-    parsed = parsed_data('data/problem_2/bcan.train')
-    for i in range(2, 21):
-        print 'depth = %i' % i
-        decision_t = tree(parsed, 1, depth_restriction=i)
-        print 'leaves = %i' % count_leaves(decision_t)
-        print 'nodes = %i' % count_nodes(decision_t)
-        parsed2 = parsed_data('data/problem_2/bcan.test')
-        water_tree(decision_t, parsed2)
-        print edible_proportion(get_fruit(decision_t))
-        print '\n'
 
 if __name__ == '__main__':
-    parsed = parsed_data('data/problem_2/bcan.train')
-    decision_t = tree(parsed, 1)
-    print 'leaves = %i' % count_leaves(decision_t)
-    print 'nodes = %i' % count_nodes(decision_t)
-    parsed2 = parsed_data('data/problem_2/bcan.test')
-    water_tree(decision_t, parsed2)
-    print 'done watering'
-    print edible_proportion(get_fruit(decision_t))
-    #print string_tree(decision_t) #I leave this evidence of my stupidity for all posterity
-    print 'offset the i by 1'
-    print "Parent node: %s" % str(decision_t.criterion)
-    print "Child node: %s" % str(decision_t.left_child.criterion)
-    print "Child node: %s" % str(decision_t.right_child.criterion)
-    depth_calculations()
+    test_seed1 = dict([('wina', '-1'), ('feature1', 'a')])
+    test_seed2 = dict([('wina', '1'), ('feature1', 'b')])
+    test_seed3 = dict([('wina', '0'), ('feature1', 'c')])
+    test_data = [test_seed1, test_seed2, test_seed3]
+    test_attributes = ['feature1']
+    test_attribute_dict = dict([('feature1', ['a', 'b', 'c'])])
+
+    formatted = get_data(test_data)
+    tree = create_tree(None, formatted, 0, test_attributes, test_attribute_dict, 9999)
+
+    print test(tree, formatted)
