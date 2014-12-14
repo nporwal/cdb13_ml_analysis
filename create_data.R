@@ -16,7 +16,6 @@ tomissing <- function(x, value=NA) {
 }
 
 tomissing_neg <- function(x) {
-  x[x < 0] <- NA
   x
 }
 
