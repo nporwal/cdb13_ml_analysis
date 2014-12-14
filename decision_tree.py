@@ -22,88 +22,94 @@ class Leaf(object):
 
 class Data(object):
     label = None
-    data = []
+    data = None
     predicted_label = None
 
     def __init__(self, label, data):
         self.label = label
         self.data = data
 
+#raw data is a list of dictionaries
+#returns a list of Data objects
+def get_data(raw_data):
+    formatted = []
+    for instance in raw_data:
+        label = None
+        data_dict = None
+        for item, value in instance.iteritems():
+            if item == 'wina':
+                label = value
+            else:
+                data_dict['item'] = value
+        formatted.append(Data(label, data_dict))
+    return formatted
+
 #win, draw, lose are proportions
-def entropy(win, lose, draw):
+def entropy_helper(win, lose, draw):
     #0 log 0 = 0
     if win  == 1 or lose == 1 or draw == 1:
         return 0
     return -(win * (math.log(win, 2))) - (lose * (math.log(lose, 2))) - (draw * (math.log(draw, 2)))
 
+#lst is a list of labels
+def entropy(lst):
+    count = len(lst)
+    win_count = sum([1 for instance in lst if instance == '1'])
+    lose_count = sum([1 for instance in lst if instance == '0'])
+    draw_count = sum([1 for instance in lst if instance == '-1'])
 
-def information_gain_helper(lst):
-    info = dict()
-    info['count'] = len(lst)
-    win_count
-    lose_count
-    draw_count
-    if info['count'] == 0:
-        info['win_proportion'] = 0
-        info['lose_proportion'] = 0
-        info ['draw_proportion'] = 0
+    if count == 0:
+        win_proportion = 0
+        lose_proportion = 0
+        draw_proportion = 0
     else:
-        info['win_proportion'] = float(win_count)/info['count']
-        info['lose_proportion'] = float(lose_count)/info['count']
-        info ['draw_proportion'] = float(draw_count)/info['count']
-    return info
+        win_proportion = float(win_count)/count
+        lose_proportion = float(lose_count)/count
+        draw_proportion= float(draw_count)/count
+    return entropy_helper(win_proportion, lose_proportion, draw_proportion)
 
 
-#[(Label:Bool, Attribute:Bool)] -> float
+#[(Label: string, value: string)] -> float
 def information_gain(total_lst):
-    total = information_gain_helper(total_lst)
+    original_count = len(total_lst)
+    original_entropy = entropy([label for (label, value) in total_lst])
 
-    #list of elements with attribute greater than the specified j
-    greater_attribute_lst = [(label, attribute) for label, attribute in total_lst if attribute]
-    greater = information_gain_helper(greater_attribute_lst)
+    #key is an attribute value, count is attributes of that value
+    counts = dict()
+    labels = dict()
+    for label, value in total_lst:
+        #we could fix this with default_dict, but we won't
+        counts[value] = counts.get(value, 0) + 1
+        labels[value] = labels[value].append(label)
 
-    #list of elements with attribute less than the specified j
-    lesser_attribute_lst = [(label, attribute) for label, attribute in total_lst if not attribute]
-    lesser = information_gain_helper(lesser_attribute_lst)
-
-    total_entropy = entropy(total['positive_proportion'], total['negative_proportion'])
-    greater_entropy = ((float(greater['count'])/total['count'])
-                       * entropy(greater['positive_proportion'], greater['negative_proportion']))
-    lesser_entropy = ((float(lesser['count'])/total['count'])
-                      * entropy(lesser['positive_proportion'], lesser['negative_proportion']))
-    return total_entropy - greater_entropy - lesser_entropy
+    new_entropy = [counts[item]/original_count * entropy(lst) for (item, lst) in labels]
+    return original_entropy - new_entropy
 
 
-#input: [Data]
-def best_combination(lst):
-    result_lst = []
-    for i in range(0, 9):
-        for j in range(1, 10):
-            criterion = information_gain([(instance.label, (instance.data[i] <= j)) for instance in lst])
-            weight = 1 - criterion
-            result_lst.append((weight, i, j))
-
-    #min will first compare using weight, finding the lowest weight (highest criterion value)
-    #then if there are ties, it will look for the lowest i (as required)
-    #if there are further ties, it will look for the lowest j (as required)
-    return min(result_lst)
+#input: [Data] -> best_attribute, remaining_attributes
+def best_attribute(data_lst, attribute_lst):
+    attgain_lst = []
+    for attribute, enums in attribute_lst:
+        reduced_lst = [(item.label, item.data['attribute']) for item in data_lst]
+        attgain_lst.append(attribute, information_gain(reduced_lst))
+    max_attribute, info_gain = max(attgain_lst, key=lambda (attribute, info_gain): info_gain)
+    attgain_lst.remove(max)
+    remaining_attributes = [attribute for (attribute, info_gain) in attgain_lst]
+    return max_attribute, remaining_attributes
 
 
-def tree(lst, depth, depth_restriction=999999):
-    weight, i, j = best_combination(lst)
-    malignant_lst = [instance for instance in lst if instance.label]
-    malignant_count = len(malignant_lst)
-    benign_lst = [instance for instance in lst if not instance.label]
-    benign_count = len(benign_lst)
+#lst is a lst of Data objects
+def tree(lst, depth, attributes, att_dict, depth_restriction=999999):
+    best, info_gain, remaining = best_attribute(lst, attributes)
 
-    positive_lst = [instance for instance in lst if instance.data[i] <= j]
-    negative_lst = [instance for instance in lst if instance.data[i] > j]
-
-    #if information_gain == 0
-    if weight == 1 or depth == depth_restriction:
-        return Leaf(lst, malignant_count >= benign_count, depth)
-    return Node(lst, malignant_count >= benign_count, depth, (i, j), tree(positive_lst, depth+1, depth_restriction), tree(negative_lst, depth+1, depth_restriction))
-
+    if info_gain == 1:
+        pass
+    else:
+        children = []
+        for value in att_dict[best]:
+            sub_lst = [instance for instance in lst if instance.data['best'] == value]
+            children.append(tree())
+        Node(label, depth, children)
 
 def water_tree(t, instances):
         the_type = type(t)
