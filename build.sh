@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 RSCRIPT=Rscript
-PYTHON=python
+PYTHON=python3
 SQLITE_DB=cdb13.sqlite3
 
 DATA_DIR=data
