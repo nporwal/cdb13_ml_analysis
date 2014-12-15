@@ -11,36 +11,41 @@ class Node(object):
     label = None
     depth = 0
     children = []
+    win_loss_ties = ""
 
-    def __init__(self, prev_value, attribute, label, depth, children):
+    def __init__(self, prev_value, attribute, label, win_loss_ties, depth, children):
         self.prev_value = prev_value
         self.attribute = attribute
         self.label = label
         self.depth = depth
         self.children = children
+        self.win_loss_ties = win_loss_ties
 
     def __str__(self):
-        return "depth:%i label:%s parent value:%s feature:%s children%s" % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
+        return ("depth:%i label:%s parent value:%s feature:%s win/loss/ties:%s children:%s" %
+                (self.depth, self.label, self.prev_value, self.attribute, self.win_loss_ties, str(self.children)))
 
     def __repr__(self):
-        return "depth:%i label:%s parent value:%s feature:%s children%s" % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
-
+        return ("depth:%i label:%s parent value:%s feature:%s win/loss/ties:%s children:%s" %
+                (self.depth, self.label, self.prev_value, self.attribute, self.win_loss_ties, str(self.children)))
 
 class Leaf(object):
     label = None
     depth = 0
     prev_value = None
+    win_loss_ties = ""
 
-    def __init__(self, prev_value, label, depth):
+    def __init__(self, prev_value, label, win_loss_ties, depth):
         self.prev_value = prev_value
         self.label = label
         self.depth = depth
+        self.win_loss_ties = win_loss_ties
 
     def __str__(self):
-        return "depth:%i label:%s parent value:%s" % (self.depth, self.label, self.prev_value)
+        return "depth:%i label:%s parent value:%s win/loss/ties:%s" % (self.depth, self.label, self.prev_value, self.win_loss_ties)
 
     def __repr__(self):
-        return "depth:%i label:%s parent value:%s" % (self.depth, self.label, self.prev_value)
+        return "depth:%i label:%s parent value:%s win/loss/ties:%s" % (self.depth, self.label, self.prev_value, self.win_loss_ties)
 
 
 class Data(object):
@@ -132,12 +137,15 @@ def create_tree(prev_value, lst, depth, attributes, att_dict, depth_restriction=
     win_count = len([instance for instance in lst if instance.label == "1"])
     lose_count = len([instance for instance in lst if instance.label == "-1"])
     draw_count = len([instance for instance in lst if instance.label == "0"])
+    win_loss_ties = "%i/%i/%i" % (win_count, lose_count, draw_count)
     label = max([("1", win_count), ("-1", lose_count), ("0", draw_count)], key = lambda(label, count): count)[0]
 
     if win_count == len(lst) or lose_count == len(lst) or draw_count == len(lst):
-        return Leaf(prev_value, label, depth)
+        return Leaf(prev_value, label, win_loss_ties, depth)
     elif not attributes:
-        return Leaf(prev_value, label, depth)
+        return Leaf(prev_value, label, win_loss_ties, depth)
+    elif depth == depth_restriction:
+        return Leaf(prev_value, label, win_loss_ties, depth)
     else:
         next_decision_att, remaining = best_attribute(lst, attributes)
         children = []
@@ -145,7 +153,7 @@ def create_tree(prev_value, lst, depth, attributes, att_dict, depth_restriction=
             sub_lst = [instance for instance in lst if instance.data[next_decision_att] == value]
             if sub_lst:
                 children.append(create_tree(value, sub_lst, depth+1, copy.deepcopy(remaining), att_dict, depth_restriction))
-        return Node(prev_value, next_decision_att, label, depth, children)
+        return Node(prev_value, next_decision_att, label, win_loss_ties, depth, children)
 
 
 def predict_label(instance, t):
@@ -176,7 +184,7 @@ def build_a_tree():
     del attribute_dict["wina"]
     attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
     formatted = get_data(battles)
-    tree = create_tree(None, formatted, 0, attributes, attribute_dict, 9999)
+    tree = create_tree(None, formatted, 0, attributes, attribute_dict, 10)
     return tree
 
 

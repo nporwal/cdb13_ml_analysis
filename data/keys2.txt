@@ -24,6 +24,7 @@ momnta
 intela
 techa
 inita
+crit
 quala
 resa
 mobila
