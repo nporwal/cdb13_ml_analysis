@@ -3,7 +3,7 @@ import copy
 from collections import defaultdict
 import war_data_parser
 import pydot
-
+import random
 
 class Node(object):
     prev_value = None
@@ -157,10 +157,7 @@ def create_tree(prev_value, lst, depth, attributes, att_dict, depth_restriction=
 
 
 def predict_label(instance, t):
-    print str(instance.data)
     if type(t) == Leaf:
-        print t.label
-        print instance.label
         return t.label
     else:
         deciding_attribute = t.attribute
@@ -168,24 +165,13 @@ def predict_label(instance, t):
             if child.prev_value == instance.data[deciding_attribute]:
                 return predict_label(instance, child)
 
-        print "this is weirdly met %s %s" % (str(child), str(deciding_attribute))
+        #print "this is weirdly met %s %s" % (str(child), str(deciding_attribute))
         return t.label
 
 
 def test(t, instances):
     correct = [instance for instance in instances if instance.label == predict_label(instance, t)]
     return float(len(correct))/len(instances)
-
-
-def build_a_tree():
-    parsed_data = war_data_parser.battle_object()
-    battles = parsed_data.battles
-    attribute_dict = parsed_data.kvs
-    del attribute_dict["wina"]
-    attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
-    formatted = get_data(battles)
-    tree = create_tree(None, formatted, 0, attributes, attribute_dict, 10)
-    return tree
 
 
 # Head is head of decision tree, name is the name of the picture for the file we want to output, ex "tree1"
@@ -221,7 +207,63 @@ def __add_children(parent, parent_node, graph, no):
             graph.add_edge(edge)
 
 
+def kfold(data, depth):
+    random.shuffle(data)
+    count = len(data)
+    fold1 = copy.deepcopy(data[:count/4])
+    fold2 = copy.deepcopy(data[count/4:count/2])
+    fold3 = copy.deepcopy(data[count/2:count*3/4])
+    fold4 = copy.deepcopy(data[count*3/4:])
+
+    print "kfold depth: %i" % depth
+
+    tree1 = create_tree(None, fold2+fold3+fold4, 0, attributes, attribute_dict, depth)
+    draw_tree(tree1, ("graphs_some_atts/tree_fold1depth%i" % depth))
+    accuracy1 = test(tree1, fold1)
+    #print "accuracy1: %f\n" % accuracy1
+
+    tree2 = create_tree(None, fold1+fold3+fold4, 0, attributes, attribute_dict, depth)
+    accuracy2 = test(tree2, fold2)
+    draw_tree(tree2, ("graphs_some_atts/tree_fold2depth%i" % depth))
+    #print "accuracy2: %f\n" % accuracy2
+
+    tree3 = create_tree(None, fold1+fold2+fold4, 0, attributes, attribute_dict, depth)
+    accuracy3 = test(tree3, fold3)
+    draw_tree(tree3, ("graphs_some_atts/tree_fold3depth%i" % depth))
+    #print "accuracy3: %f\n" % accuracy3
+
+    tree4 = create_tree(None, fold1+fold2+fold3, 0, attributes, attribute_dict, depth)
+    accuracy4 = test(tree4, fold4)
+    draw_tree(tree4, ("graphs_some_atts/tree_fold4depth%i" % depth))
+    #print "accuracy4: %f\n" % accuracy4
+
+    print "average accuracy: %f \n" % ((accuracy1 + accuracy2 + accuracy3 + accuracy4)/4)
+
+    print "\n"
+
+
+
+
 if __name__ == "__main__":
-    head = build_a_tree()
-    draw_tree(head, "tree")
-    print head
+    parsed_data = war_data_parser.battle_object()
+    battles = parsed_data.battles
+    attribute_dict = parsed_data.kvs
+    del attribute_dict["wina"]
+    attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
+    formatted = get_data(battles)
+
+    #tree1 = create_tree(None, formatted, 0, attributes, attribute_dict, 10)
+    #draw_tree(tree1, "default_tree_all_data")
+
+    kfold(copy.deepcopy(formatted), 1)
+    kfold(copy.deepcopy(formatted), 2)
+    kfold(copy.deepcopy(formatted), 3)
+    kfold(copy.deepcopy(formatted), 4)
+    kfold(copy.deepcopy(formatted), 5)
+    kfold(copy.deepcopy(formatted), 6)
+    kfold(copy.deepcopy(formatted), 7)
+    kfold(copy.deepcopy(formatted), 8)
+    kfold(copy.deepcopy(formatted), 9)
+    kfold(copy.deepcopy(formatted), 10)
+
+
