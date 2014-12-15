@@ -2,6 +2,8 @@ import math
 import copy
 from collections import defaultdict
 import war_data_parser
+import pydot
+
 
 class Node(object):
     prev_value = None
@@ -18,10 +20,10 @@ class Node(object):
         self.children = children
 
     def __str__(self):
-        return 'depth:%i label:%s parent value:%s feature:%s children%s' % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
+        return "depth:%i label:%s parent value:%s feature:%s children%s" % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
 
     def __repr__(self):
-        return 'depth:%i label:%s parent value:%s feature:%s children%s' % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
+        return "depth:%i label:%s parent value:%s feature:%s children%s" % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
 
 
 class Leaf(object):
@@ -35,10 +37,10 @@ class Leaf(object):
         self.depth = depth
 
     def __str__(self):
-        return 'depth:%i label:%s parent value:%s' % (self.depth, self.label, self.prev_value)
+        return "depth:%i label:%s parent value:%s" % (self.depth, self.label, self.prev_value)
 
     def __repr__(self):
-        return 'depth:%i label:%s parent value:%s' % (self.depth, self.label, self.prev_value)
+        return "depth:%i label:%s parent value:%s" % (self.depth, self.label, self.prev_value)
 
 
 class Data(object):
@@ -50,6 +52,7 @@ class Data(object):
         self.label = label
         self.data = data
 
+
 #raw data is a list of dictionaries
 #returns a list of Data objects
 def get_data(raw_data):
@@ -58,12 +61,13 @@ def get_data(raw_data):
         label = None
         data_dict = dict()
         for item, value in instance.iteritems():
-            if item == 'wina':
+            if item == "wina":
                 label = value
             else:
                 data_dict[item] = value
         formatted.append(Data(label, data_dict))
     return formatted
+
 
 #win, draw, lose are proportions
 def entropy_helper(win, lose, draw):
@@ -76,12 +80,13 @@ def entropy_helper(win, lose, draw):
 
     return (- log_helper(win) - log_helper(lose) - log_helper(draw))
 
+
 #lst is a list of labels
 def entropy(lst):
     count = len(lst)
-    win_count = sum([1 for instance in lst if instance == '1'])
-    lose_count = sum([1 for instance in lst if instance == '0'])
-    draw_count = sum([1 for instance in lst if instance == '-1'])
+    win_count = sum([1 for instance in lst if instance == "1"])
+    lose_count = sum([1 for instance in lst if instance == "0"])
+    draw_count = sum([1 for instance in lst if instance == "-1"])
 
     if count == 0:
         win_proportion = 0
@@ -124,10 +129,10 @@ def best_attribute(data_lst, attribute_lst):
 #lst is a lst of Data objects
 def create_tree(prev_value, lst, depth, attributes, att_dict, depth_restriction=999999):
 
-    win_count = len([instance for instance in lst if instance.label == '1'])
-    lose_count = len([instance for instance in lst if instance.label == '-1'])
-    draw_count = len([instance for instance in lst if instance.label == '0'])
-    label = max([('1', win_count), ('-1', lose_count), ('0', draw_count)], key = lambda(label, count): count)[0]
+    win_count = len([instance for instance in lst if instance.label == "1"])
+    lose_count = len([instance for instance in lst if instance.label == "-1"])
+    draw_count = len([instance for instance in lst if instance.label == "0"])
+    label = max([("1", win_count), ("-1", lose_count), ("0", draw_count)], key = lambda(label, count): count)[0]
 
     if win_count == len(lst) or lose_count == len(lst) or draw_count == len(lst):
         return Leaf(prev_value, label, depth)
@@ -155,25 +160,56 @@ def predict_label(instance, t):
             if child.prev_value == instance.data[deciding_attribute]:
                 return predict_label(instance, child)
 
-        print 'this is weirdly met %s %s' % (str(child), str(deciding_attribute))
+        print "this is weirdly met %s %s" % (str(child), str(deciding_attribute))
         return t.label
+
 
 def test(t, instances):
     correct = [instance for instance in instances if instance.label == predict_label(instance, t)]
     return float(len(correct))/len(instances)
 
 
-
 def build_a_tree():
-
     parsed_data = war_data_parser.battle_object()
     battles = parsed_data.battles
     attribute_dict = parsed_data.kvs
-    del attribute_dict['wina']
+    del attribute_dict["wina"]
     attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
     formatted = get_data(battles)
     tree = create_tree(None, formatted, 0, attributes, attribute_dict, 9999)
     return tree
 
+
+# Head is head of decision tree, name is the name of the picture for the file we want to output, ex "tree1"
+def draw_tree(head, name):
+    graph = pydot.Dot(graph_type="graph", ranksep="0.10")
+
+    parent_node = pydot.Node(head.attribute)
+    __add_children(head, parent_node, graph)
+
+    graph.write_png("%s.png" % name)
+
+
+def __add_children(parent, parent_node, graph):
+    for child in parent.children:
+        if child.prev_value == "":
+            child.prev_value = "N/A"
+        if child.label == "":
+            child.label = "N/A"
+        if isinstance(child, Node):
+            child_node = pydot.Node(child.attribute)
+            graph.add_node(child_node)
+            edge = pydot.Edge(parent_node, child_node, label=child.prev_value)
+            graph.add_edge(edge)
+            __add_children(child, child_node, graph)
+        else:
+            leaf_node = pydot.Node(parent.attribute + child.label, label=child.label)
+            graph.add_node(leaf_node)
+            edge = pydot.Edge(parent_node, leaf_node, label=child.prev_value)
+            graph.add_edge(edge)
+
+
 if __name__ == "__main__":
-    print build_a_tree()
+    head = build_a_tree()
+    draw_tree(head, "tree")
+    print head

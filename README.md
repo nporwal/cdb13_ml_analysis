@@ -10,9 +10,11 @@ ai_final_project
 #Features to extract:
 
 1. battles.csv
+
 *isqno -- battle number/index 
 
 2. terrain.csv
+
 *terra1
 *terra2
 *terra3

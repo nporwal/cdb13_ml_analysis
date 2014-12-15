@@ -11,7 +11,6 @@ SRC_DATA = "src-data"
 
 ## TODO: output battle, belligerent, atp
 tomissing <- function(x, value=NA) {
-  x[x %in% value] <- NA
   x
 }
 

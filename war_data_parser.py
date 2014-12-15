@@ -27,7 +27,7 @@ def parse_and_add(filename, n):
 
 
 class BattleData:
-    # Provide filenames in order 'battles', 'weather', 'terrain'
+    # Provide filenames in order "battles", "weather", "terrain"
     def __init__(self, filenames, keys_file):
         self.n = 0
         self.battles = []
