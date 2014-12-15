@@ -193,25 +193,29 @@ def draw_tree(head, name):
     graph = pydot.Dot(graph_type="graph", ranksep="0.10")
 
     parent_node = pydot.Node(head.attribute)
-    __add_children(head, parent_node, graph)
+    __add_children(head, parent_node, graph, 0)
 
     graph.write_png("%s.png" % name)
 
 
-def __add_children(parent, parent_node, graph):
-    for child in parent.children:
+def __add_children(parent, parent_node, graph, no):
+    for i, child in enumerate(parent.children):
         if child.prev_value == "":
             child.prev_value = "N/A"
         if child.label == "":
             child.label = "N/A"
         if isinstance(child, Node):
-            child_node = pydot.Node(parent.attribute + child.attribute + str(parent.depth) + str(child.depth), label=child.attribute)
+            child_node = pydot.Node(parent.attribute + child.attribute + str(parent.depth) + str(child.depth)
+                                    + parent.win_loss_ties + child.win_loss_ties + str(no),
+                                    label=child.attribute+"\nW/L/T: %s" % child.win_loss_ties)
             graph.add_node(child_node)
             edge = pydot.Edge(parent_node, child_node, label=child.prev_value)
             graph.add_edge(edge)
-            __add_children(child, child_node, graph)
+            __add_children(child, child_node, graph, no+i+1)
         else:
-            leaf_node = pydot.Node(parent.attribute + child.label + str(parent.depth) + str(child.depth), label=child.label)
+            leaf_node = pydot.Node(parent.attribute + child.label + str(parent.depth) + str(child.depth)
+                                   + parent.win_loss_ties + child.win_loss_ties + str(no),
+                                   label=child.label+"\nW/L/T: %s" % child.win_loss_ties)
             graph.add_node(leaf_node)
             edge = pydot.Edge(parent_node, leaf_node, label=child.prev_value)
             graph.add_edge(edge)
