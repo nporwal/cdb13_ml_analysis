@@ -165,7 +165,7 @@ def predict_label(instance, t):
             if child.prev_value == instance.data[deciding_attribute]:
                 return predict_label(instance, child)
 
-        #print "this is weirdly met %s %s" % (str(child), str(deciding_attribute))
+        # "this is weirdly met %s %s" % (str(child), str(deciding_attribute))
         return t.label
 
 
@@ -252,10 +252,10 @@ if __name__ == "__main__":
     attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
     formatted = get_data(battles)
 
-    #tree1 = create_tree(None, formatted, 0, attributes, attribute_dict, 10)
-    #draw_tree(tree1, "default_tree_all_data")
+    tree1 = create_tree(None, formatted, 0, attributes, attribute_dict, 10)
+    draw_tree(tree1, "default_tree_all_data")
 
-    kfold(copy.deepcopy(formatted), 1)
+    '''kfold(copy.deepcopy(formatted), 1)
     kfold(copy.deepcopy(formatted), 2)
     kfold(copy.deepcopy(formatted), 3)
     kfold(copy.deepcopy(formatted), 4)
@@ -264,6 +264,6 @@ if __name__ == "__main__":
     kfold(copy.deepcopy(formatted), 7)
     kfold(copy.deepcopy(formatted), 8)
     kfold(copy.deepcopy(formatted), 9)
-    kfold(copy.deepcopy(formatted), 10)
+    kfold(copy.deepcopy(formatted), 10)'''
 
 
