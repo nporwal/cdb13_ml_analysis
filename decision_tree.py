@@ -242,7 +242,13 @@ def kfold(data, depth):
     print "\n"
 
 
-
+def demo(depth, location):
+    parsed_data = war_data_parser.battle_object()
+    battles = parsed_data.battles
+    attribute_dict = parsed_data.kvs
+    del attribute_dict["wina"]
+    attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
+    formatted = get_data(battles)
 
 if __name__ == "__main__":
     parsed_data = war_data_parser.battle_object()

@@ -122,7 +122,10 @@ def test(model, instances):
                 scores[label] += value * weight
             random.shuffle(scores)
         #print scores
-        prediction = max(scores.iteritems(), key = lambda (label, weight): weight)[0]
+        if scores:
+            prediction = max(scores.iteritems(), key = lambda (label, weight): weight)[0]
+        else:
+            prediction = random.shuffle(["1", "0", "-1"])
         #print (str((prediction, label)) + '\n')
         if prediction == label:
             correct += 1
@@ -138,33 +141,29 @@ def kfold(data, attribute_list):
 
     training1 = fold2 + fold3 + fold4
     counts1 = count_labels(training1)
-    print (str(counts1) + '\n')
     model1 = train(training1, attribute_list, counts1, 5)
     pickle.dump(model1, open('model1', 'w'))
     accuracy1 = test(model1, fold1)
 
     training2 = fold1 + fold3 + fold4
     counts2 = count_labels(training2)
-    print (str(counts2) + '\n')
     model2 = train(training2, attribute_list, counts2, 5)
     pickle.dump(model2, open('model2', 'w'))
     accuracy2 = test(model2, fold2)
 
     training3 = fold1 + fold2 + fold4
     counts3 = count_labels(training3)
-    print (str(counts3) + '\n')
     model3 = train(training3, attribute_list, counts3, 5)
     pickle.dump(model1, open('model3', 'w'))
     accuracy3 = test(model3, fold3)
 
     training4 = fold1 + fold2 + fold3
     counts4 = count_labels(training4)
-    print (str(counts4) + '\n')
     model4 = train(training4, attribute_list, counts4, 5)
     pickle.dump(model4, open('model4', 'w'))
     accuracy4 = test(model4, fold4)
 
-    print "average accuracy: %f" % ((accuracy1 + accuracy2 + accuracy3 + accuracy4)/4)
+    return (accuracy1 + accuracy2 + accuracy3 + accuracy4)/4.0
 
 def main():
     #adjust this to handle the format we preprocess the examples in
@@ -187,8 +186,10 @@ def main():
     for key, enums in attribute_dict.iteritems():
         for enum in enums:
             attribute_list.append('%s,%s' % (key, enum))
-
-    kfold(battles, attribute_list)
+    n = 0
+    for i in range(0, 4):
+        n += kfold(battles, attribute_list)
+    print "averaged k-fold accuracy: %f\n"  % (n/4.0)
     #counts = count_labels(battles)
-    #model = train(battles, attribute_list, counts)
+    #model = train(battles, attribute_list, counts, 5)
     #return sort_weights(model.averaged_weights)
