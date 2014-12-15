@@ -1,6 +1,7 @@
 import math
 import copy
 from collections import defaultdict
+import war_data_parser
 
 class Node(object):
     prev_value = None
@@ -16,6 +17,12 @@ class Node(object):
         self.depth = depth
         self.children = children
 
+    def __str__(self):
+        return 'depth:%i label:%s parent value:%s feature:%s children%s' % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
+
+    def __repr__(self):
+        return 'depth:%i label:%s parent value:%s feature:%s children%s' % (self.depth, self.label, self.prev_value, self.attribute, str(self.children))
+
 
 class Leaf(object):
     label = None
@@ -26,6 +33,12 @@ class Leaf(object):
         self.prev_value = prev_value
         self.label = label
         self.depth = depth
+
+    def __str__(self):
+        return 'depth:%i label:%s parent value:%s' % (self.depth, self.label, self.prev_value)
+
+    def __repr__(self):
+        return 'depth:%i label:%s parent value:%s' % (self.depth, self.label, self.prev_value)
 
 
 class Data(object):
@@ -55,9 +68,13 @@ def get_data(raw_data):
 #win, draw, lose are proportions
 def entropy_helper(win, lose, draw):
     #0 log 0 = 0
-    if win  == 1 or lose == 1 or draw == 1:
-        return 0
-    return -(win * (math.log(win, 2))) - (lose * (math.log(lose, 2))) - (draw * (math.log(draw, 2)))
+    def log_helper(label):
+        if label == 1 or label == 0:
+            return 0
+        else:
+            return (label * (math.log(label, 2)))
+
+    return (- log_helper(win) - log_helper(lose) - log_helper(draw))
 
 #lst is a list of labels
 def entropy(lst):
@@ -146,24 +163,17 @@ def test(t, instances):
     return float(len(correct))/len(instances)
 
 
-def string_tree(t):
-    string_lst = str(t.lst)
-    if type(t) == Leaf:
-        return 'Leaf(list = %s)' % string_lst
-    else:
-        return ('Node(list = %s, left_child = %s, right_child = %s)' %
-        (string_lst, string_tree(t.left_child), string_tree(t.right_child)))
 
+def build_a_tree():
 
-if __name__ == '__main__':
-    test_seed1 = dict([('wina', '-1'), ('feature1', 'a')])
-    test_seed2 = dict([('wina', '1'), ('feature1', 'b')])
-    test_seed3 = dict([('wina', '0'), ('feature1', 'c')])
-    test_data = [test_seed1, test_seed2, test_seed3]
-    test_attributes = ['feature1']
-    test_attribute_dict = dict([('feature1', ['a', 'b', 'c'])])
+    parsed_data = war_data_parser.battle_object()
+    battles = parsed_data.battles
+    attribute_dict = parsed_data.kvs
+    del attribute_dict['wina']
+    attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
+    formatted = get_data(battles)
+    tree = create_tree(None, formatted, 0, attributes, attribute_dict, 9999)
+    return tree
 
-    formatted = get_data(test_data)
-    tree = create_tree(None, formatted, 0, test_attributes, test_attribute_dict, 9999)
-
-    print test(tree, formatted)
+if __name__ == "__main__":
+    print build_a_tree()

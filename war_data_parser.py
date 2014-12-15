@@ -1,6 +1,5 @@
 import csv
 
-
 def flatten(data):
     new_data = []
     for row in data:
@@ -74,5 +73,11 @@ class BattleData:
         for enum in self.kvs.values():
             enum.sort()
 
+def battle_object():
+    return BattleData(["data/battles.csv", "data/weather.csv", "data/terrain.csv"], "data/keys.txt")
+
 if __name__ == "__main__":
     battles = BattleData(["data/battles.csv", "data/weather.csv", "data/terrain.csv"], "data/keys.txt")
+    print battles.kvs
+    print battles.battles[0]
+    print battles.n
