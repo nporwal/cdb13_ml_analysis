@@ -197,13 +197,13 @@ def __add_children(parent, parent_node, graph):
         if child.label == "":
             child.label = "N/A"
         if isinstance(child, Node):
-            child_node = pydot.Node(child.attribute)
+            child_node = pydot.Node(parent.attribute + child.attribute + str(parent.depth) + str(child.depth), label=child.attribute)
             graph.add_node(child_node)
             edge = pydot.Edge(parent_node, child_node, label=child.prev_value)
             graph.add_edge(edge)
             __add_children(child, child_node, graph)
         else:
-            leaf_node = pydot.Node(parent.attribute + child.label, label=child.label)
+            leaf_node = pydot.Node(parent.attribute + child.label + str(parent.depth) + str(child.depth), label=child.label)
             graph.add_node(leaf_node)
             edge = pydot.Edge(parent_node, leaf_node, label=child.prev_value)
             graph.add_edge(edge)
