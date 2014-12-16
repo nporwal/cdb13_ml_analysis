@@ -21,6 +21,7 @@ class AveragedPerceptron(object):
         # Number of instances seen
         self.i = 0
 
+
     def predict(self, features):
         self.i += 1
         scores = defaultdict(float)
@@ -32,7 +33,7 @@ class AveragedPerceptron(object):
         return max(scores.iteritems(), key = lambda (label, weight): weight)[0]
 
 
-    def update(self, true_label, features, counts):
+    def update(self, true_label, features):
         '''Update the feature weights.'''
 
         for feat, value in features.iteritems():
@@ -45,14 +46,12 @@ class AveragedPerceptron(object):
                 if label == true_label:
                     if label == "1":
                         weights[label] += 1
-                        #weights[label] += float(counts['1'])/(counts[label])
                     elif label == "-1":
                         weights[label] += 2
                     elif label ==  "0":
                         weights[label] += 4
                 else:
                     weights[label] -= 1
-
 
 
     def average_weights(self):
@@ -66,18 +65,8 @@ class AveragedPerceptron(object):
                 if averaged:
                     self.averaged_weights[feature][label] = averaged
 
-    def save(self, path):
-        '''Save the pickled model weights.'''
-        return pickle.dump(dict(self.averaged_weights), open(path, 'w'))
 
-    def load(self, path):
-        '''Load the pickled model weights.'''
-        self.weights = pickle.load(open(path))
-        return None
-
-def train(battles, attribute_list, counts, iterations):
-
-
+def train(battles, attribute_list, iterations):
     model = AveragedPerceptron(attribute_list)
     for i in range(0, iterations):
         random.shuffle(battles)
@@ -85,18 +74,10 @@ def train(battles, attribute_list, counts, iterations):
 
             prediction = model.predict(features)
             if prediction != label:
-                model.update(label, features, counts)
+                model.update(label, features)
     model.average_weights()
-    #model.save(save_path)
     return model
 
-def count_labels(instances):
-    counts = dict()
-    counts["total"] = len(instances)
-    counts["1"] = len([label for features, label in instances if label == "1"])
-    counts["-1"] = len([label for features, label in instances if label == "-1"])
-    counts["0"] = len([label for features, label in instances if label == "0"])
-    return counts
 
 def sort_weights(weights):
     print weights.items()[0]
@@ -110,6 +91,7 @@ def sort_weights(weights):
     sorted_losses.reverse()
 
     return sorted_wins, sorted_ties, sorted_losses
+
 
 def test(model, instances):
     total = len(instances)
@@ -131,6 +113,7 @@ def test(model, instances):
             correct += 1
     return float(correct)/total
 
+
 def kfold(data, attribute_list):
     random.shuffle(data)
     count = len(data)
@@ -140,32 +123,28 @@ def kfold(data, attribute_list):
     fold4 = copy.deepcopy(data[count*3/4:])
 
     training1 = fold2 + fold3 + fold4
-    counts1 = count_labels(training1)
-    model1 = train(training1, attribute_list, counts1, 5)
+    model1 = train(training1, attribute_list, 5)
     pickle.dump(model1, open('model1', 'w'))
     accuracy1 = test(model1, fold1)
 
     training2 = fold1 + fold3 + fold4
-    counts2 = count_labels(training2)
-    model2 = train(training2, attribute_list, counts2, 5)
+    model2 = train(training2, attribute_list, 5)
     pickle.dump(model2, open('model2', 'w'))
     accuracy2 = test(model2, fold2)
 
     training3 = fold1 + fold2 + fold4
-    counts3 = count_labels(training3)
-    model3 = train(training3, attribute_list, counts3, 5)
+    model3 = train(training3, attribute_list, 5)
     pickle.dump(model1, open('model3', 'w'))
     accuracy3 = test(model3, fold3)
 
     training4 = fold1 + fold2 + fold3
-    counts4 = count_labels(training4)
-    model4 = train(training4, attribute_list, counts4, 5)
+    model4 = train(training4, attribute_list, 5)
     pickle.dump(model4, open('model4', 'w'))
     accuracy4 = test(model4, fold4)
 
     return (accuracy1 + accuracy2 + accuracy3 + accuracy4)/4.0
 
-def main():
+if __name__ == "__main__":
     #adjust this to handle the format we preprocess the examples in
     def process(instance):
         data_dict = dict()
@@ -186,10 +165,20 @@ def main():
     for key, enums in attribute_dict.iteritems():
         for enum in enums:
             attribute_list.append('%s,%s' % (key, enum))
-    n = 0
-    for i in range(0, 4):
-        n += kfold(battles, attribute_list)
-    print "averaged k-fold accuracy: %f\n"  % (n/4.0)
-    #counts = count_labels(battles)
-    #model = train(battles, attribute_list, counts, 5)
-    #return sort_weights(model.averaged_weights)
+
+    model = train(battles, attribute_list, 5)
+    sorted_wins, sorted_ties, sorted_losses = sort_weights(model.averaged_weights)
+    print "features with the heaviest weight for attacker's win:\n"
+    for i in range(0, 5):
+        print str(sorted_wins[i])
+        print '\n'
+
+    print "features with the heaviest weight for attacker's loss:\n"
+    for i in range(0, 5):
+        print str(sorted_losses[i])
+        print '\n'
+
+    print "features with the heaviest weight for tie:\n"
+    for i in range(0, 5):
+        print str(sorted_ties[i])
+        print '\n'

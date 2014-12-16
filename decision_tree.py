@@ -119,7 +119,7 @@ def information_gain(total_lst):
     return original_entropy - new_entropy
 
 
-#input: [Data], [attributes, values] -> best_attribute, remaining_attributes
+#input: [Data], [attributes, values] -> best_attribute, [remaining_attributes, values]
 def best_attribute(data_lst, attribute_lst):
     attgain_lst = []
     for attribute in attribute_lst:
@@ -164,8 +164,6 @@ def predict_label(instance, t):
         for child in t.children:
             if child.prev_value == instance.data[deciding_attribute]:
                 return predict_label(instance, child)
-
-        # "this is weirdly met %s %s" % (str(child), str(deciding_attribute))
         return t.label
 
 
@@ -220,35 +218,23 @@ def kfold(data, depth):
     tree1 = create_tree(None, fold2+fold3+fold4, 0, attributes, attribute_dict, depth)
     draw_tree(tree1, ("graphs_some_atts/tree_fold1depth%i" % depth))
     accuracy1 = test(tree1, fold1)
-    #print "accuracy1: %f\n" % accuracy1
 
     tree2 = create_tree(None, fold1+fold3+fold4, 0, attributes, attribute_dict, depth)
     accuracy2 = test(tree2, fold2)
     draw_tree(tree2, ("graphs_some_atts/tree_fold2depth%i" % depth))
-    #print "accuracy2: %f\n" % accuracy2
 
     tree3 = create_tree(None, fold1+fold2+fold4, 0, attributes, attribute_dict, depth)
     accuracy3 = test(tree3, fold3)
     draw_tree(tree3, ("graphs_some_atts/tree_fold3depth%i" % depth))
-    #print "accuracy3: %f\n" % accuracy3
 
     tree4 = create_tree(None, fold1+fold2+fold3, 0, attributes, attribute_dict, depth)
     accuracy4 = test(tree4, fold4)
     draw_tree(tree4, ("graphs_some_atts/tree_fold4depth%i" % depth))
-    #print "accuracy4: %f\n" % accuracy4
 
     print "average accuracy: %f \n" % ((accuracy1 + accuracy2 + accuracy3 + accuracy4)/4)
 
     print "\n"
 
-
-def demo(depth, location):
-    parsed_data = war_data_parser.battle_object()
-    battles = parsed_data.battles
-    attribute_dict = parsed_data.kvs
-    del attribute_dict["wina"]
-    attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
-    formatted = get_data(battles)
 
 if __name__ == "__main__":
     parsed_data = war_data_parser.battle_object()
@@ -258,18 +244,14 @@ if __name__ == "__main__":
     attributes = [attribute for (attribute, values) in attribute_dict.iteritems()]
     formatted = get_data(battles)
 
+    #create the decision tree
     tree1 = create_tree(None, formatted, 0, attributes, attribute_dict, 10)
-    draw_tree(tree1, "default_tree_all_data")
 
-    '''kfold(copy.deepcopy(formatted), 1)
-    kfold(copy.deepcopy(formatted), 2)
-    kfold(copy.deepcopy(formatted), 3)
-    kfold(copy.deepcopy(formatted), 4)
-    kfold(copy.deepcopy(formatted), 5)
-    kfold(copy.deepcopy(formatted), 6)
-    kfold(copy.deepcopy(formatted), 7)
-    kfold(copy.deepcopy(formatted), 8)
-    kfold(copy.deepcopy(formatted), 9)
-    kfold(copy.deepcopy(formatted), 10)'''
+    #draw the tree at the specified location
+    draw_tree(tree1, "demonstration_tree")
+
+    #run the kfold accuracy check
+    #kfold(copy.deepcopy(formatted), 10)
+
 
 
