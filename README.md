@@ -1,4 +1,4 @@
-ai_final_project
+Battles 1600-1973 AD Analysis
 ================
 
 Analysis of CDB13 dataset of battles from 1600 AD - 1973 AD using machine learning techniques. 
